@@ -1,0 +1,14 @@
+[
+  {
+    "schema_version": "evt1.v1",
+    "canonical_name": "Sony WH-1000XM6",
+    "manufacturer": "Sony",
+    "category": "headphones",
+    "model": "WH1000XM6",
+    "variant": "Black",
+    "identity_metadata": {"gtin": "0000000001"},
+    "trust_scores": {"identity_confidence": 0.98, "counterfeit_risk": 0.08, "vendor_reliability": 0.92, "repairability": 0.81, "claim_verifiability": 0.78, "return_friction": 0.2},
+    "provenance": {"source": "sample"},
+    "signatures": {}
+  }
+]
