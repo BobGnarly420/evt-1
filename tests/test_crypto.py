@@ -1,4 +1,10 @@
-from app.services.crypto import canonical_json_bytes, generate_keypair, sign_payload, verify_signature
+from app.services.crypto import (
+    canonical_json_bytes,
+    generate_keypair,
+    sign_payload,
+    verify_signature,
+)
+
 
 def test_signature_roundtrip():
     sk, pk = generate_keypair()

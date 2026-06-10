@@ -1,6 +1,8 @@
-from sqlalchemy import JSON, Index, String
+from sqlalchemy import JSON, String
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.db.base import Base
+
 
 class Assertion(Base):
     __tablename__ = "assertions"
@@ -13,5 +15,3 @@ class Assertion(Base):
     signature: Mapped[str] = mapped_column(String(255))
     public_key: Mapped[str] = mapped_column(String(255))
     provenance: Mapped[dict] = mapped_column(JSON, default=dict)
-
-Index("ix_assertions_subject", Assertion.subject)

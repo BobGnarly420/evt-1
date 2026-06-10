@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+
 class AssertionIn(BaseModel):
     assertion_id: str
     issuer: str

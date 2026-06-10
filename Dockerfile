@@ -2,8 +2,8 @@ FROM python:3.12-slim
 WORKDIR /app
 COPY pyproject.toml README.md /app/
 COPY app /app/app
+COPY agents /app/agents
 COPY scripts /app/scripts
-COPY migrations /app/migrations
 RUN pip install --no-cache-dir -e .
 RUN python scripts/migrate.py && python scripts/seed.py
 EXPOSE 8000
