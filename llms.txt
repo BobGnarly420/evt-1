@@ -1,0 +1,51 @@
+# EVT-1
+
+> EVT-1 is a minimal, agent-first protocol for canonical product identity and
+> cryptographically verifiable trust assertions. It gives AI agents a shared,
+> deterministic way to agree on what a product is, and to verify claims about
+> it (counterfeit risk, repairability, vendor reliability) without trusting
+> the marketplace that displayed them. Think "TLS certificates, but for
+> product claims."
+
+Key facts an agent needs:
+
+- Product identity is a deterministic URN: `urn:evt:product:{manufacturer}-{model}-{variant}`,
+  lowercased, non-alphanumerics collapsed to `-`, manufacturer aliases resolved
+  (e.g. "Sony Corporation" -> "sony"). Two agents canonicalizing the same
+  product always derive the same URN.
+- Trust assertions are Ed25519 signatures over canonical JSON: sorted keys,
+  compact separators (`,` and `:`), UTF-8. The signed payload is exactly
+  `{assertion_id, issuer, subject, claim, timestamp}`. Keys and signatures are
+  base64-encoded. Anyone can verify an assertion locally; the server is not a
+  trust root.
+- Trust scores are floats in [0, 1]: identity_confidence, counterfeit_risk,
+  vendor_reliability, and optional repairability, claim_verifiability,
+  return_friction. Multiple independent validators can assert about the same
+  product; provenance and issuer are preserved as first-class fields.
+- The reference server is FastAPI + SQLite, no cloud dependencies. Run it with
+  `pip install -e .` then `uvicorn app.main:app`. Docker: `docker compose up --build`.
+
+HTTP API (also available as MCP tools via `python agents/mcp_server.py`):
+
+- `GET /resolve?q={text}` - fuzzy-resolve free text to canonical product URNs.
+- `GET /product/{urn}` - full trust profile for a product. 404 if unknown.
+- `POST /product` - register a product; the server derives the URN. 409 on duplicate.
+- `POST /assert` - store a signed assertion. 400 invalid signature, 409 duplicate id.
+- `POST /verify` - verify {payload, signature, public_key}. Stateless.
+
+MCP tools exposed by agents/mcp_server.py: resolve_product, get_trust_profile,
+submit_assertion, verify_assertion, generate_keypair, sign_assertion.
+
+## Docs
+
+- [README](README.md): quick start, architecture, signing walkthrough
+- [Protocol](docs/protocol.md): identity and signing semantics
+- [API reference](docs/api.md): endpoints, status codes, conventions
+- [OpenAPI spec](docs/openapi.json): machine-readable API schema
+- [Threat model](docs/threat-model.md): what is and is not mitigated
+- [Agent schema](agents/product_identity.py): pydantic models for trust profiles
+
+## Optional
+
+- [Examples](examples/): curl, python, and agent-tool integration snippets
+- [AGENTS.md](AGENTS.md): contribution conventions and protocol invariants
