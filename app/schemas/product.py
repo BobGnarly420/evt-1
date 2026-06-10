@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 
+
 class TrustScores(BaseModel):
     identity_confidence: float = Field(ge=0, le=1)
     counterfeit_risk: float = Field(ge=0, le=1)

@@ -1,12 +1,14 @@
-from sqlalchemy import JSON, Float, Index, String
+from sqlalchemy import JSON, Float, String
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.db.base import Base
+
 
 class Product(Base):
     __tablename__ = "products"
     id: Mapped[int] = mapped_column(primary_key=True)
     schema_version: Mapped[str] = mapped_column(String(32))
-    product_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    product_id: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     canonical_name: Mapped[str] = mapped_column(String(255), index=True)
     manufacturer: Mapped[str] = mapped_column(String(255), index=True)
     category: Mapped[str] = mapped_column(String(255))
@@ -19,5 +21,3 @@ class Product(Base):
     return_friction: Mapped[float | None] = mapped_column(Float, nullable=True)
     provenance: Mapped[dict] = mapped_column(JSON, default=dict)
     signatures: Mapped[dict] = mapped_column(JSON, default=dict)
-
-Index("ix_products_product_id", Product.product_id)

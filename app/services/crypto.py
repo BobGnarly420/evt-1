@@ -1,5 +1,6 @@
 import base64
 import json
+
 from nacl.signing import SigningKey, VerifyKey
 
 

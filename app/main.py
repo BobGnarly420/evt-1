@@ -1,5 +1,6 @@
 from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy.orm import Session
+
 from app.db.base import Base
 from app.db.session import SessionLocal, engine
 from app.models import Assertion, Product
@@ -20,6 +21,27 @@ def get_db():
         db.close()
 
 
+def product_out(p: Product) -> ProductOut:
+    return ProductOut(
+        schema_version=p.schema_version,
+        product_id=p.product_id,
+        canonical_name=p.canonical_name,
+        manufacturer=p.manufacturer,
+        category=p.category,
+        identity_metadata=p.identity_metadata,
+        trust_scores=TrustScores(
+            identity_confidence=p.identity_confidence,
+            counterfeit_risk=p.counterfeit_risk,
+            vendor_reliability=p.vendor_reliability,
+            repairability=p.repairability,
+            claim_verifiability=p.claim_verifiability,
+            return_friction=p.return_friction,
+        ),
+        provenance=p.provenance,
+        signatures=p.signatures,
+    )
+
+
 @app.get("/")
 def root():
     return {"name": "evt-1", "status": "ok"}
@@ -33,6 +55,8 @@ def health():
 @app.post("/product", response_model=ProductOut)
 def create_product(body: ProductIn, db: Session = Depends(get_db)):
     pid, conf, explain = canonicalize(body.manufacturer, body.model, body.variant)
+    if db.query(Product).filter(Product.product_id == pid).first():
+        raise HTTPException(status_code=409, detail=f"Product already exists: {pid}")
     p = Product(
         schema_version=body.schema_version,
         product_id=pid,
@@ -49,34 +73,47 @@ def create_product(body: ProductIn, db: Session = Depends(get_db)):
         provenance=body.provenance,
         signatures=body.signatures,
     )
-    db.add(p); db.commit(); db.refresh(p)
-    return ProductOut(
-        schema_version=p.schema_version, product_id=p.product_id, canonical_name=p.canonical_name,
-        manufacturer=p.manufacturer, category=p.category, identity_metadata=p.identity_metadata,
-        trust_scores=TrustScores(identity_confidence=p.identity_confidence, counterfeit_risk=p.counterfeit_risk, vendor_reliability=p.vendor_reliability, repairability=p.repairability, claim_verifiability=p.claim_verifiability, return_friction=p.return_friction),
-        provenance=p.provenance, signatures=p.signatures
-    )
+    db.add(p)
+    db.commit()
+    db.refresh(p)
+    return product_out(p)
+
 
 @app.get("/product/{product_id}", response_model=ProductOut)
 def get_product(product_id: str, db: Session = Depends(get_db)):
     p = db.query(Product).filter(Product.product_id == product_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Product not found")
-    return ProductOut(schema_version=p.schema_version, product_id=p.product_id, canonical_name=p.canonical_name, manufacturer=p.manufacturer, category=p.category, identity_metadata=p.identity_metadata, trust_scores=TrustScores(identity_confidence=p.identity_confidence, counterfeit_risk=p.counterfeit_risk, vendor_reliability=p.vendor_reliability, repairability=p.repairability, claim_verifiability=p.claim_verifiability, return_friction=p.return_friction), provenance=p.provenance, signatures=p.signatures)
+    return product_out(p)
+
 
 @app.get("/resolve")
 def resolve(q: str = Query(...), db: Session = Depends(get_db)):
     rows = db.query(Product).filter(Product.canonical_name.ilike(f"%{q}%")).all()
     return [{"product_id": r.product_id, "canonical_name": r.canonical_name} for r in rows]
 
+
 @app.post("/assert")
 def create_assertion(body: AssertionIn, db: Session = Depends(get_db)):
-    payload = {"assertion_id": body.assertion_id, "issuer": body.issuer, "subject": body.subject, "claim": body.claim, "timestamp": body.timestamp}
+    payload = {
+        "assertion_id": body.assertion_id,
+        "issuer": body.issuer,
+        "subject": body.subject,
+        "claim": body.claim,
+        "timestamp": body.timestamp,
+    }
     if not verify_signature(body.public_key, payload, body.signature):
         raise HTTPException(status_code=400, detail="Invalid signature")
+    if db.query(Assertion).filter(Assertion.assertion_id == body.assertion_id).first():
+        raise HTTPException(
+            status_code=409, detail=f"Assertion already exists: {body.assertion_id}"
+        )
     a = Assertion(**body.model_dump())
-    db.add(a); db.commit(); db.refresh(a)
+    db.add(a)
+    db.commit()
+    db.refresh(a)
     return {"stored": True, "assertion_id": a.assertion_id}
+
 
 @app.post("/verify", response_model=VerifyResponse)
 def verify(req: VerifyRequest):

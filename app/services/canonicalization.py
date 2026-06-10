@@ -1,4 +1,5 @@
 import re
+
 from rapidfuzz import fuzz
 
 ALIASES = {
@@ -15,5 +16,9 @@ def canonicalize(manufacturer: str, model: str, variant: str) -> tuple[str, floa
     mf = ALIASES.get(mf_raw, mf_raw)
     confidence = fuzz.ratio(mf_raw, mf) / 100.0
     pid = f"urn:evt:product:{norm(mf)}-{norm(model)}-{norm(variant)}"
-    explain = {"manufacturer_input": manufacturer, "manufacturer_canonical": mf, "match_confidence": confidence}
+    explain = {
+        "manufacturer_input": manufacturer,
+        "manufacturer_canonical": mf,
+        "match_confidence": confidence,
+    }
     return pid, max(confidence, 0.75), explain
