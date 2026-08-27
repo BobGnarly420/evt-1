@@ -12,14 +12,14 @@ Or register in an MCP client config:
 import os
 
 import httpx
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
 
 from app.services.crypto import generate_keypair as _generate_keypair
 from app.services.crypto import sign_payload, verify_signature
 
 BASE_URL = os.getenv("EVT1_BASE_URL", "http://127.0.0.1:8000")
 
-mcp = FastMCP("evt1")
+mcp = MCPServer("evt1")
 
 
 def _client() -> httpx.Client:
